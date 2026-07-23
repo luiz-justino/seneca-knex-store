@@ -3,6 +3,7 @@
 
 # @seneca/knex-store
 
+[![npm version](https://img.shields.io/npm/v/seneca-knex-store.svg)](https://npmjs.com/package/seneca-knex-store)
 [![build](https://github.com/senecajs/seneca-knex-store/actions/workflows/build.yml/badge.svg)](https://github.com/senecajs/seneca-knex-store/actions/workflows/build.yml)
 [![Coverage Status](https://coveralls.io/repos/github/senecajs/seneca-knex-store/badge.svg?branch=master)](https://coveralls.io/github/senecajs/seneca-knex-store?branch=master)
 [![Known Vulnerabilities](https://snyk.io/test/github/senecajs/seneca-knex-store/badge.svg)](https://snyk.io/test/github/senecajs/seneca-knex-store)
