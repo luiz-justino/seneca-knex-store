@@ -12,13 +12,13 @@
 | ![Voxgig](https://www.voxgig.com/res/img/vgt01r.png) | This open source module is sponsored and supported by [Voxgig](https://www.voxgig.com). |
 |---|---|
 
-seneca-knex-store is a [Knex] database/ORM plugin for the [Seneca][seneca] MVP toolkit.
+seneca-knex-store is a [Knex](http://knexjs.org) database/ORM plugin for the [Seneca](http://senecajs.org) MVP toolkit.
 
-The Seneca framework provides an [ActiveRecord-style data storage API][].
+The Seneca framework provides an [ActiveRecord-style data storage API](http://senecajs.org/docs/tutorials/understanding-data-entities.html).
 Each supported database has a plugin, such as this one, that provides
 the underlying Seneca plugin actions required for data persistence.
 
-This plugin is loaded by default by the [seneca-entity][seneca-entity-url] plugin that also needs the [seneca-basic][seneca-basic-url] plugin to function properly.
+This plugin is loaded by default by the [seneca-entity](https://github.com/senecajs/seneca-entity) plugin that also needs the [seneca-basic](https://github.com/senecajs/seneca-basic) plugin to function properly.
 
 ## Install
 
