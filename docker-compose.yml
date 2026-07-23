@@ -1,8 +1,11 @@
-postgres:
-  build: ./test/config/docker
-  ports:
-    - "5433:5432"
-  environment:
-    POSTGRES_PASSWORD: senecatest_0102
-    POSTGRES_DB: senecatest_knex
-    POSTGRES_USER: senecatest
+services:
+  postgres:
+    build:
+      context: ./test/config/docker/
+      dockerfile: postgres.Dockerfile
+    ports:
+      - '5433:5432'
+    environment:
+      POSTGRES_PASSWORD: senecatest_0102
+      POSTGRES_DB: senecatest_knex
+      POSTGRES_USER: senecatest

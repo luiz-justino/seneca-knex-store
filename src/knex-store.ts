@@ -1,7 +1,6 @@
 /* Copyright (c) 2010-2022 Richard Rodger and other contributors, MIT License */
-import { intern } from './intern'
-const Pg = require('pg')
-const { asyncMethod } = intern
+import Intern from './intern'
+import Knex from 'knex'
 
 const STORE_NAME = 'knex-store'
 
@@ -17,22 +16,11 @@ type Options = {
 function knex_store(this: any, options: Options) {
   // Take a reference to the calling Seneca instance
   const seneca = this
-  
-  let dbPool: {
-    end: any ,
-    connect: () => Promise<any> 
-}
+
+  let rootKnexClient: any
 
   function configure(spec: any, done: any) {
-    const conf = intern.getConfig(spec)
-
-    dbPool = new Pg.Pool({
-      user: conf.user,
-      host: conf.host,
-      database: conf.database,
-      password: conf.password,
-      port: conf.port
-    })
+    rootKnexClient = Knex(spec)
 
     return done()
   }
@@ -44,138 +32,174 @@ function knex_store(this: any, options: Options) {
     // use in seneca.use(), eg seneca.use('knex-store').
     name: STORE_NAME,
 
-    save: asyncMethod(async function (this: any, msg: any, meta: any){
+    save: async function (this: any, msg: any, reply: any) {
       const seneca = this
-  
-      const ctx = intern.buildCtx(seneca, msg, meta)
-      
-      return intern.withDbClient(dbPool, ctx, async (client: any) => {
-          const ctx = { seneca, client }
-          const { ent } = msg
+      const { ent, q } = msg
 
-          // check if we are in create mode,
-          // if we are do a create, otherwise
-          // we will do a save instead
-          // Check async if the entity is new or not
-          const is_new = await intern.isNew(ent)
+      const knexClient = await Intern.getKnexClient(
+        rootKnexClient,
+        seneca,
+        msg,
+        meta
+      )
 
-          return is_new ? do_save() : do_create()
-          
-          // Create a new entity
-          async function do_create() {
-            // generate a new id for the entity
-            // const id = intern.generateId()
+      async function do_create() {
+        // create a new entity
+        try {
+          const newEnt = ent.clone$()
 
-            // create a new entity
-            try {
-            const newEnt = ent.clone$()
-
-            const insertTest = intern.insertKnex(newEnt, ctx)
-
-            return insertTest
-
-            } catch (err) {
-              return err
-            }
+          if (ent.id$) {
+            newEnt.id = ent.id$
           }
 
-          // Save an existing entity  
-          async function do_save() {
-            const doSave = await intern.updateKnex(ent, ctx)
-            // call the reply callback with the
-            // updated entity
-            return doSave
-          }
-        })
-    }),
+          const doCreate = await Intern.insertKnex(knexClient, newEnt)
+
+          return doCreate
+        } catch (err) {
+          return err
+        }
+      }
+
+      // Save an existing entity
+      async function do_save() {
+        const doSave = await Intern.updateKnex(knexClient, ent)
+        // call the reply callback with the
+        // updated entity
+        return doSave
+      }
+
+      const save = (await Intern.isUpdate(knexClient, ent, q))
+        ? await do_save()
+        : await do_create()
+      return reply(null, save)
+    },
 
     load: async function (this: any, msg: any, reply: any) {
+      const seneca = this
       const qent = msg.qent
       const q = msg.q || {}
 
-      const load = await intern.firstKnex(qent, q.id)
-      reply(null, load[0])
+      const knexClient = await Intern.getKnexClient(
+        rootKnexClient,
+        seneca,
+        msg,
+        meta
+      )
+
+      const load = await Intern.firstKnex(knexClient, qent, q)
+      reply(null, load)
     },
 
-    list: async function (msg: any, reply: any) {
+    list: async function (this: any, msg: any, reply: any) {
+      const seneca = this
       const qent = msg.qent
+      const q = msg.q || {}
 
-      const list = await intern.findKnex(qent)
+      const knexClient = await Intern.getKnexClient(
+        rootKnexClient,
+        seneca,
+        msg,
+        meta
+      )
+
+      const list = await Intern.findKnex(knexClient, qent, q)
       reply(null, list)
     },
 
     remove: async function (this: any, msg: any, reply: any) {
+      const seneca = this
       const qent = msg.qent
       const q = msg.q || {}
 
-      const list = await intern.removeKnex(
-        qent,
-        q)
-      reply(null, list)
+      const knexClient = await Intern.getKnexClient(
+        rootKnexClient,
+        seneca,
+        msg,
+        meta
+      )
+
+      const remove = await Intern.removeKnex(knexClient, qent, q)
+      reply(null, remove)
     },
 
-    native: function (_msg: any, done: any) {
-      dbPool.connect().then(done).catch(done)
+    native: function (_msg: any, reply: any) {
+      reply({ native: () => rootKnexClient })
     },
 
-    close: function (_msg: any, done: any) {
-      dbPool.end().then(done).catch(done)
+    close: function (_msg: any, reply: any) {
+      rootKnexClient.destroy().then(reply)
+        .catch((err: any) => {
+          reply(err)
+        })
     },
   }
 
-  // Seneca will call init:plugin-name for us. This makes
-  // this action a great place to do any setup.
   const meta = seneca.store.init(seneca, options, store)
 
-  seneca.add({ init: store.name, tag: meta.tag }, function (_msg: any, done: any) {
-    return configure(options, done)
-  })
+  seneca.add(
+    { init: store.name, tag: meta.tag },
+    function (_msg: any, done: any) {
+      return configure(options, done)
+    }
+  )
 
-  seneca.add(intern.msgForGenerateId({ role: 'sql', target: STORE_NAME }),
-  function (_msg: any, done: any) {
-    let id = intern.generateId()
-    return done(null, { id })
-  })
+  seneca.add(
+    'sys:entity,transaction:transaction',
+    async function (this: any, msg: any, reply: any) {
+      const trxKnexClient = await rootKnexClient.transaction()
 
-
-seneca.add('sys:entity,transaction:begin', (msg: any, reply: any) => {
-  // NOTE: `BEGIN` is called in intern.withDbClient
-  reply({
-    handle: { id: this.util.Nid(), name: 'postgres' }
-  })
-})
-
-seneca.add('sys:entity,transaction:end', function(msg: any, reply: any) {
-  let transaction = msg.details()
-  let client = transaction.client
-  client.query('COMMIT')
-    .then(()=>{
       reply({
-        done: true
+        get_handle: () => trxKnexClient,
       })
-    })
-    .catch((err: any)=>reply(err))
-})
+    }
+  )
 
-seneca.add('sys:entity,transaction:rollback', function(msg: any, reply: any) {
-  let transaction = msg.details()
-  let client = transaction.client
+  seneca.add('sys:entity,transaction:commit', function (msg: any, reply: any) {
+    const transactionDetails = msg.get_transaction()
+    const trxKnexClient = transactionDetails.handle
 
-  client.query('ROLLBACK')
-    .then(()=>{
-      reply({
-        done: false, rollback: true
+    trxKnexClient
+      .commit()
+      .then(() => {
+        reply({
+          done: true,
+        })
       })
-    })
-    .catch((err: any)=>reply(err))
-})
+      .catch(reply)
+  })
+
+  seneca.add(
+    'sys:entity,transaction:rollback',
+    function (msg: any, reply: any) {
+      const transactionDetails = msg.get_transaction()
+      const trxKnexClient = transactionDetails.handle
+
+      trxKnexClient
+        .rollback()
+        .then(() => {
+          reply({
+            done: false,
+            rollback: true,
+          })
+        })
+        .catch((err: any) => {
+          reply(err)
+        })
+    }
+  )
+
+  seneca.add('sys:entity,transaction:adopt', function (msg: any, reply: any) {
+    const trxKnexClient = msg.get_handle()
+    // Since transaction already exists, no need to do anything, just return it
+    reply({ get_handle: () => trxKnexClient })
+  })
 
   // We don't return the store itself, it will self load into Seneca via the
   // init() function. Instead we return a simple object with the stores name
   // and generated meta tag.
   return {
     name: store.name,
-    tag: meta.tag
+    tag: meta.tag,
   }
 }
 
