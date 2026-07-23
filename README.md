@@ -3,17 +3,31 @@
 
 # @seneca/knex-store
 
-[![npm version](https://img.shields.io/npm/v/@seneca/knex-store.svg)](https://npmjs.com/package/@seneca/knex-store)
-[![npm version][npm-badge]][npm-url]
-[![Build](https://github.com/senecajs/seneca-knex-store/actions/workflows/build.yml/badge.svg)](https://github.com/senecajs/seneca-knex-store/actions/workflows/build.yml)
-[![Dependency Status][david-badge]][david-url]
-[![Maintainability](https://api.codeclimate.com/v1/badges/e2cdcc5415161cb378b0/maintainability)](https://codeclimate.com/github/senecajs/seneca-knex-store/maintainability)
-[![DeepScan grade](https://deepscan.io/api/teams/5016/projects/17225/branches/388415/badge/grade.svg)](https://deepscan.io/dashboard#view=project&tid=5016&pid=17225&bid=388415)
-[![Coveralls][BadgeCoveralls]][Coveralls]
+[![build](https://github.com/senecajs/seneca-knex-store/actions/workflows/build.yml/badge.svg)](https://github.com/senecajs/seneca-knex-store/actions/workflows/build.yml)
+[![Coverage Status](https://coveralls.io/repos/github/senecajs/seneca-knex-store/badge.svg?branch=master)](https://coveralls.io/github/senecajs/seneca-knex-store?branch=master)
 [![Known Vulnerabilities](https://snyk.io/test/github/senecajs/seneca-knex-store/badge.svg)](https://snyk.io/test/github/senecajs/seneca-knex-store)
+[![DeepScan grade](https://deepscan.io/api/teams/5016/projects/17225/branches/388415/badge/grade.svg)](https://deepscan.io/dashboard#view=project&tid=5016&pid=17225&bid=388415)
+[![Maintainability](https://api.codeclimate.com/v1/badges/e2cdcc5415161cb378b0/maintainability)](https://codeclimate.com/github/senecajs/seneca-knex-store/maintainability)
 
 | ![Voxgig](https://www.voxgig.com/res/img/vgt01r.png) | This open source module is sponsored and supported by [Voxgig](https://www.voxgig.com). |
 |---|---|
+
+seneca-knex-store is a [Knex] database/ORM plugin for the [Seneca][seneca] MVP toolkit.
+
+The Seneca framework provides an [ActiveRecord-style data storage API][].
+Each supported database has a plugin, such as this one, that provides
+the underlying Seneca plugin actions required for data persistence.
+
+This plugin is loaded by default by the [seneca-entity][seneca-entity-url] plugin that also needs the [seneca-basic][seneca-basic-url] plugin to function properly.
+
+If you're using this module, and need help, you can:
+
+- Post a [github issue][],
+- Tweet to [@senecajs][],
+- Ask on the [Gitter][gitter-url].
+
+If you are new to Seneca in general, please take a look at [senecajs.org][]. We have everything from
+tutorials to sample apps to help get you up and running quickly.
 
 ## Install
 
@@ -58,7 +72,7 @@ All Seneca data store supported functionality is implemented in [seneca-store-te
 
 ## Motivation
 
-A [Seneca.js](http://senecajs.org) plugin.
+A [Seneca.js](http://senecajs.org) store plugin using Knex.js for SQL database support.
 
 ## Support
 
@@ -70,24 +84,20 @@ If you're using this module and need help, you can:
 
 ## API
 
-### Description
+### Usage
 
-seneca-knex-store is a [Knex] database/ORM plugin for the [Seneca][seneca] MVP toolkit.
+You don't use this module directly. It provides an underlying data storage engine for the Seneca entity API:
 
-The Seneca framework provides an [ActiveRecord-style data storage API][].
-Each supported database has a plugin, such as this one, that provides
-the underlying Seneca plugin actions required for data persistence.
+```js
+var entity = seneca.make$('typename')
+entity.someproperty = "something"
+entity.anotherproperty = 100
 
-This plugin is loaded by default by the [seneca-entity][seneca-entity-url] plugin that also needs the [seneca-basic][seneca-basic-url] plugin to function properly.
-
-If you're using this module, and need help, you can:
-
-- Post a [github issue][],
-- Tweet to [@senecajs][],
-- Ask on the [Gitter][gitter-url].
-
-If you are new to Seneca in general, please take a look at [senecajs.org][]. We have everything from
-tutorials to sample apps to help get you up and running quickly.
+entity.save$(function (err, entity) { ... })
+entity.load$({id: ... }, function (err, entity) { ... })
+entity.list$({property: ... }, function (err, entity) { ... })
+entity.remove$({id: ... }, function (err, entity) { ... })
+```
 
 ## Contributing
 
