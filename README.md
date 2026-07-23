@@ -7,7 +7,6 @@
 [![Coverage Status](https://coveralls.io/repos/github/senecajs/seneca-knex-store/badge.svg?branch=master)](https://coveralls.io/github/senecajs/seneca-knex-store?branch=master)
 [![Known Vulnerabilities](https://snyk.io/test/github/senecajs/seneca-knex-store/badge.svg)](https://snyk.io/test/github/senecajs/seneca-knex-store)
 [![DeepScan grade](https://deepscan.io/api/teams/5016/projects/17225/branches/388415/badge/grade.svg)](https://deepscan.io/dashboard#view=project&tid=5016&pid=17225&bid=388415)
-[![Maintainability](https://api.codeclimate.com/v1/badges/e2cdcc5415161cb378b0/maintainability)](https://codeclimate.com/github/senecajs/seneca-knex-store/maintainability)
 
 | ![Voxgig](https://www.voxgig.com/res/img/vgt01r.png) | This open source module is sponsored and supported by [Voxgig](https://www.voxgig.com). |
 |---|---|
